@@ -1,143 +1,238 @@
 import java.io.*;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.Scanner;
 
 public class ConvertFiles {
-    static Scanner kb = new Scanner(System.in);
     public static void main(String[] args) {
-        String input1;
-        String input2;
-        String output1;
-        String output2;
-        String userOutput;
+        Scanner kb = new Scanner(System.in);
+        System.out.print("Enter the number of files to convert to JSON: ");
+        int numFiles = Integer.parseInt(kb.nextLine());
+        String[] fileName = new String[numFiles];
+        Scanner[] csv = new Scanner[numFiles];
+        PrintWriter[] json = new PrintWriter[numFiles];
 
-        Scanner sc = null;
-        PrintWriter pt = null;
-        BufferedReader br = null;
-
-        // Check first input file
-        System.out.println("Please enter the name of the first input file you wish to open.");
-        input1 = kb.next();
-        try{
-            sc = new Scanner(new FileInputStream(input1));
-        }
-        catch(FileNotFoundException e){
-            System.out.println("Could not open input file " + input1 + " for reading. \n" +
-                    "Check if file exists! Program will terminate after closing any opened files.");
-            e.printStackTrace();
-            assert false;
-            sc.close();
-            System.exit(0);
-        }
-        System.out.println("The input file " + input1 + " is opened for reading.");
-
-        // Check second input file
-        System.out.println("Please enter the name of the second input file you wish to open.");
-        input2 = kb.next();
-        try{
-            sc = new Scanner(new FileInputStream(input2));
-        }
-        catch(FileNotFoundException e){
-            System.out.println("Could not open input file " + input2 + " for reading. \n" +
-                    "Check if file exists! Program will terminate after closing any opened files.");
-            e.printStackTrace();
-            assert false;
-            sc.close();
-            System.exit(0);
-        }
-        System.out.println("The input file " + input2 + "is opened for reading.");
-
-        // Check first output file
-        System.out.println("Please enter the name of the first output file you wish to open.");
-        output1 = kb.next();
-        try{
-            pt = new PrintWriter(new FileOutputStream(output1));
-        } catch (FileNotFoundException e) {
-            System.out.println("Could not open output file " + output1 +" for reading. \n" +
-                    "Check if file exists! Program will terminate after closing any opened files.");
-            e.printStackTrace();
-            System.exit(0);
+        for (int i = 0; i < numFiles; i++) {
+            System.out.println("Enter the name of file " + (i + 1) + ": ");
+            fileName[i] = kb.nextLine();
             try {
-                Files.delete(Paths.get(output1));
-                System.out.println(output1 +" has been deleted.");
-            }
-            catch(IOException ex){
-                ex.printStackTrace();
-                System.out.println(output1 + "has not be deleted.");
-            }
-        }
-        catch(Exception ex){
-            ex.printStackTrace();
-        }
-        System.out.println("The output file " + output1 + " is opened for writing.");
-
-
-        // Check second output file
-        System.out.println("Please enter the name of the second output file you wish to open.");
-        output2 = kb.next();
-        try{
-            pt = new PrintWriter(new FileOutputStream(output2));
-        } catch (FileNotFoundException e) {
-            System.out.println("Could not open output file " + output2 + " for reading. \n" +
-                    "Check if file exists! Program will terminate after closing any opened files.");
-            e.printStackTrace();
-            System.exit(0);
-            try {
-                Files.delete(Paths.get(output2));
-                System.out.println(output2 +" has been deleted.");
-            }
-            catch(IOException ex){
-                ex.printStackTrace();
-                System.out.println(output2 + "has not be deleted.");
-            }
-        }
-        catch(Exception ex){
-            ex.printStackTrace();
-        }
-        System.out.println("The output file " + output2 + " is opened for writing.");
-
-
-        // Ask user to enter the name of one of the created output files to display
-        for(int i = 0; i < 2; i++) {
-            System.out.println("Please enter the name of the output file you wish to open.");
-            userOutput = kb.next();
-            if(!(userOutput.equals(output1) || userOutput.equals(output2))){
-                System.out.println("You have one last attempt to enter the name of the output file you wish to open.");
-            }else{
-                try{
-                    displayFileContents(userOutput);
+                csv[i] = new Scanner(new FileInputStream(fileName[i]));
+            } catch (Exception e) {
+                System.out.println("Could not open the file " + fileName[i] + " for reading.\n" +
+                        "Please check if the file exists.\n" +
+                        "The program will terminate after closing all opened files.");
+                for (int j = i - 1; j >= 0; j--) {
+                    csv[j].close();
                 }
-                catch(Exception e){
-                    System.out.println("Could not open output file " + userOutput +" for reading. \n" +
-                            "Check if file exists! Program will terminate after closing any opened files.");
-                    e.printStackTrace();
+                System.exit(0);
+            }
+        }
+        for (int i = 0; i < numFiles; i++) {
+            String s = fileName[i].substring(0, fileName[i].length() - 3) + "json";
+            try {
+                json[i] = new PrintWriter(new FileOutputStream(s));
+            } catch (FileNotFoundException e) {
+                System.out.println("Could not create the file " + s + " for writing.\n" +
+                        "The program will terminate after deleting all the files that were created.\n" +
+                        "All opened files will be closed.");
+                for (int j = i-1; j >= 0; j--)
+                {
+                    json[j].close();
+                    try{
+                        Files.deleteIfExists(Path.of(fileName[j].substring(0, fileName[j].length() - 3) + "json"));
+                    } catch (IOException ioException) {
+                        ioException.printStackTrace();
+                    }
+                    for (int k = i - 1; k >= 0; k--) {
+                        csv[k].close();
+                    }
                     System.exit(0);
                 }
-                break;
+            }
+        }
+        for(int i = 0; i < numFiles; i++){
+            try {
+                PrintWriter log = new PrintWriter(new FileOutputStream("log.txt", true));
+                processFilesForValidation(csv[i], json[i], log, fileName[i]);
+                System.out.println("Processing " + fileName[i]);
+                System.out.println("____________________________________________\n");
+                csv[i].close();
+                json[i].close();
+                log.close();
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
+        displayFileContents();
+    }
+
+    private static void processFilesForValidation(Scanner csv, PrintWriter json, PrintWriter log, String inputFile) {
+        String line = csv.nextLine();
+        File one = new File(line);
+        File two = null;
+        int countField = 0;
+        int countLine = 0;
+        int countInfo = 0;
+
+        try{
+            for(int i = 0; i < one.split.length; i++){
+                if(one.split[i] == null){
+                    countField++;
+                }
+            }
+            if(countField > 0){
+                throw new CSVFileInvalidException();
+            }else{
+                json.println("[");
+                while(csv.hasNextLine()){
+                    two = new File(csv.nextLine());
+                    try{
+                        for(int i = 0; i < two.split.length; i++){
+                            if(two.split[i] == null){
+                                countInfo++;
+                                countLine = i;
+                            }
+                        }
+                        if(countInfo > 0) throw new CSVDataMissingException();
+                        else writeJson(one, two, json);
+                    }catch(CSVDataMissingException e){
+                        System.out.println("In file " + inputFile + " line " + countLine + " not converted to JSON: Missing Data\n");
+                        writeLog(one, two, log, inputFile, countLine, 2);
+                        countInfo = 0;
+                    }
+                }
+                json.println("]");
+            }
+        }catch(CSVFileInvalidException e){
+            System.out.println("File " + inputFile + " is invalid: Field is missing.");
+            System.out.println("File is not converted to JSON.");
+            writeLog(one, two, log, inputFile, countField, 1);
+            System.out.println("File was not processed.\n");
+        }
+
+    }
+
+    private static void displayFileContents(){
+        String file;
+        String line;
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        BufferedReader br2;
+        for(int i = 0; i < 2; i++){
+            try{
+                System.out.print("Enter the name of the file you want to display: ");
+                file = br.readLine();
+                try{
+                    br2 = new BufferedReader((new FileReader(file)));
+                }catch(FileNotFoundException e){
+                    System.out.println("You have one last attempt to enter the name of the output file you wish to open.");
+                    file = br.readLine();
+                    br2 = new BufferedReader((new FileReader(file)));
+                }
+                line = br2.readLine();
+                while(line != null){
+                    System.out.println(line);
+                    line = br2.readLine();
+                }
+                System.out.println("Everything in the file was displayed.");
+            } catch(Exception e){
+                System.out.println("Could not open the requested file for display.\n" +
+                        "Check if file exists. The program will terminate after closing any opened files");
+                System.exit(0);
             }
         }
     }
 
-    private static void displayFileContents(String fileName){
-        try(BufferedReader br = new BufferedReader(new FileReader(fileName));){
-            String line = null;
-            while ((line = br.readLine()) != null) {
-                System.out.println("The output of the file");
-                System.out.println(line);
-            }
-            br.close();
+    private static void writeJson(File one, File two, PrintWriter json){
+        json.println(" {");
+        for(int i = 0; i < one.split.length; i++){
+            json.println(" \"" + one.split[i] + "\": \"" + two.split[i] + "\",");
         }
-        catch(IOException e){
-            System.out.println("Could not open output file " + fileName +" for reading. \n" +
-                    "Check if file exists! Program will terminate after closing any opened files.");
-            e.printStackTrace();
-            System.exit(0);
-        }
+        json.println(" },");
     }
 
-    private static void processFilesForValidation(String inputFile, String outputFile) throws CSVFileInvalidException {
+    private static void writeLog(File one, File two, PrintWriter log, String inputFile, int count, int errorCode){
+        if(errorCode == 1){
+            log.println("File " + inputFile + " is invalid.");
+            log.println("Missing field: " + (one.split.length - count) + " detected, " + count + " missing.");
 
+            for(int i = 0; i < one.split.length - 1; i++) {
+                if (one.split[i] != null) {
+                    log.print(one.split[i] + ", ");
+                } else {
+                    log.print("***, ");
+                }
+            }
+            if(one.split[one.split.length - 1] != null){
+                log.println(one.split[one.split.length - 1]);
+            }else{
+                log.println("***");
+            }
+            System.out.println();
+        }else{
+            int line = 0;
+            log.println("In file " + inputFile + " line " + count);
+            for(int i = 0; i < two.split.length; i++){
+                if(two.split[i] == null){
+                    log.print("*** ");
+                    line = i;
+                }else{
+                    log.print(two.split[i] + " ");
+                }
+            }
+            log.println("\nMissing: " + one.split[line]);
+        }
+        log.println("____________________________________________\n");
+    }
+}
+
+class File{
+    String[] split;
+    File(String line){
+        split = adjustLine(line.split(","));
+    }
+    private String[] adjustLine(String[] info){
+        String content;
+        int countTokens = 0;
+        int countFinalData = 0;
+
+        for(int i = 0; i< info.length; i++){
+            if(info[i] != ""){
+                if(info[i].charAt(0) == '\"'){
+                    for(int j = i + 1; j < info.length; j++){
+                        if(info[j].charAt(info[j].length() - 1) == '\"'){
+                            countTokens ++;
+                            break;
+                        }else{
+                            countTokens ++;
+                        }
+                    }
+                }
+            }
+        }
+        String[] finalData = new String[info.length - countTokens];
+
+        for (int i = 0; i<info.length; i++){
+            if (info[i]!=""){
+                if (info[i].charAt(0)=='\"') {
+                    content = info[i].substring(1);
+                    for (int j = i + 1; j < info.length; j++) {
+                        if (info[j].charAt(info[j].length() - 1) == '\"') {
+                            content = content + "," + info[j].substring(0, info[j].length() - 1);
+                            i = j;
+                            break;
+                        } else {
+                            content = content + "," + info[j];
+                        }
+                    }
+                    finalData[countFinalData] = content;
+                }
+                else{
+                    finalData[countFinalData] = info[i];
+                }
+            }
+            countFinalData++;
+        }
+        return finalData;
     }
 
 }
