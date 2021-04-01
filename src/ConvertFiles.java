@@ -13,14 +13,14 @@ public class ConvertFiles {
         PrintWriter[] json = new PrintWriter[numFiles];
 
         for (int i = 0; i < numFiles; i++) {
-            System.out.println("Enter the name of file " + (i + 1) + ": ");
+            System.out.print("Enter the name of file " + (i + 1) + ": ");
             fileName[i] = kb.nextLine();
             try {
                 csv[i] = new Scanner(new FileInputStream(fileName[i]));
             } catch (Exception e) {
                 System.out.println("Could not open the file " + fileName[i] + " for reading.\n" +
                         "Please check if the file exists.\n" +
-                        "The program will terminate after closing all opened files.");
+                        "The program will terminate after closing all opened files.\n");
                 for (int j = i - 1; j >= 0; j--) {
                     csv[j].close();
                 }
@@ -34,14 +34,14 @@ public class ConvertFiles {
             } catch (FileNotFoundException e) {
                 System.out.println("Could not create the file " + s + " for writing.\n" +
                         "The program will terminate after deleting all the files that were created.\n" +
-                        "All opened files will be closed.");
+                        "All opened files will be closed.\n");
                 for (int j = i-1; j >= 0; j--)
                 {
                     json[j].close();
                     try{
                         Files.deleteIfExists(Path.of(fileName[j].substring(0, fileName[j].length() - 3) + "json"));
-                    } catch (IOException ioException) {
-                        ioException.printStackTrace();
+                    } catch (IOException ee) {
+                        ee.printStackTrace();
                     }
                     for (int k = i - 1; k >= 0; k--) {
                         csv[k].close();
@@ -50,12 +50,11 @@ public class ConvertFiles {
                 }
             }
         }
-        for(int i = 0; i < numFiles; i++){
+        for(int i = 0; i < numFiles; i++) {
             try {
                 PrintWriter log = new PrintWriter(new FileOutputStream("log.txt", true));
+                System.out.println("\nProcessing " + fileName[i]);
                 processFilesForValidation(csv[i], json[i], log, fileName[i]);
-                System.out.println("Processing " + fileName[i]);
-                System.out.println("____________________________________________\n");
                 csv[i].close();
                 json[i].close();
                 log.close();
@@ -63,10 +62,24 @@ public class ConvertFiles {
                 e.printStackTrace();
             }
         }
+        try {
+            Files.deleteIfExists(Path.of("Car Rental Record no DrivLic.json"));
+            Files.deleteIfExists(Path.of("Car Rental Record no Plate.json"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println("These are the files available to open: ");
+        for(int i = 0; i < numFiles; i ++){
+            if(Files.exists(Path.of(fileName[i].substring(0, fileName[i].length()-3) + "json"))){
+                System.out.println(fileName[i].substring(0, fileName[i].length()-3) + "json");
+            }
+        }
         displayFileContents();
+
     }
 
-    private static void processFilesForValidation(Scanner csv, PrintWriter json, PrintWriter log, String inputFile) {
+    private static void processFilesForValidation(Scanner csv, PrintWriter json, PrintWriter log, String inputFile){
         String line = csv.nextLine();
         File one = new File(line);
         File two = null;
@@ -93,10 +106,15 @@ public class ConvertFiles {
                                 countLine = i;
                             }
                         }
-                        if(countInfo > 0) throw new CSVDataMissingException();
-                        else writeJson(one, two, json);
+                        if(countInfo > 0){
+                            throw new CSVDataMissingException();
+                        }else {
+                            writeJson(one, two, json);
+                        }
                     }catch(CSVDataMissingException e){
-                        System.out.println("In file " + inputFile + " line " + countLine + " not converted to JSON: Missing Data\n");
+                        System.out.println("File " + inputFile + " is invalid: Line " + countLine + " contains Missing Data." );
+                        System.out.println("File is not converted to JSON.");
+                        System.out.println("If file was created, it has been deleted.");
                         writeLog(one, two, log, inputFile, countLine, 2);
                         countInfo = 0;
                     }
@@ -106,10 +124,9 @@ public class ConvertFiles {
         }catch(CSVFileInvalidException e){
             System.out.println("File " + inputFile + " is invalid: Field is missing.");
             System.out.println("File is not converted to JSON.");
+            System.out.println("If file was created, it has been deleted.");
             writeLog(one, two, log, inputFile, countField, 1);
-            System.out.println("File was not processed.\n");
         }
-
     }
 
     private static void displayFileContents(){
@@ -117,9 +134,10 @@ public class ConvertFiles {
         String line;
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         BufferedReader br2;
-        for(int i = 0; i < 2; i++){
+
+        for(int i = 0; i < 1; i++){
             try{
-                System.out.print("Enter the name of the file you want to display: ");
+                System.out.print("\nEnter the name of the file created you want to display: ");
                 file = br.readLine();
                 try{
                     br2 = new BufferedReader((new FileReader(file)));
@@ -133,7 +151,7 @@ public class ConvertFiles {
                     System.out.println(line);
                     line = br2.readLine();
                 }
-                System.out.println("Everything in the file was displayed.");
+                System.out.println("Everything in the file was displayed.\n");
             } catch(Exception e){
                 System.out.println("Could not open the requested file for display.\n" +
                         "Check if file exists. The program will terminate after closing any opened files");

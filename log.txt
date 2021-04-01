@@ -1,0 +1,20 @@
+In file Car Rental Record no DrivLic.csv line 2
+16/11/2020 Steve *** Toyota Camry 5KJNR28 210000 211000 1000 
+Missing: Driver's Licence number
+____________________________________________
+
+File Car Rental Record no Plate.csv is invalid.
+Missing field: 7 detected, 1 missing.
+﻿Date, Driver's Name, Driver's Licence number, Car Make, ***, Meter at the start of trip, Meter at the end of trip, Mileage made
+____________________________________________
+
+In file Car Rental Record no DrivLic.csv line 2
+16/11/2020 Steve *** Toyota Camry 5KJNR28 210000 211000 1000 
+Missing: Driver's Licence number
+____________________________________________
+
+File Car Rental Record no Plate.csv is invalid.
+Missing field: 7 detected, 1 missing.
+﻿Date, Driver's Name, Driver's Licence number, Car Make, ***, Meter at the start of trip, Meter at the end of trip, Mileage made
+____________________________________________
+
