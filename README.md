@@ -1,4 +1,4 @@
-COMMP 249 Assignment 3
+COMP 249 Assignment 3
 
  Chloe Hei Yu Law
  40173275
